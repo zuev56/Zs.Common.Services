@@ -4,79 +4,78 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Zs.Common.Extensions;
 
-namespace Zs.Common.Services.WebAPI
+namespace Zs.Common.Services.WebAPI;
+
+public static class ApiHelper
 {
-    public static class ApiHelper
+    private static readonly HttpClient _httpClient = new HttpClient();
+
+    public static async Task<TResult> GetAsync<TResult>(
+        string requestUri,
+        string mediaType = null,
+        string userAgent = null,
+        bool throwExceptionOnError = true)
     {
-        private static readonly HttpClient _httpClient = new HttpClient();
-
-        public static async Task<TResult> GetAsync<TResult>(
-            string requestUri,
-            string mediaType = null,
-            string userAgent = null,
-            bool throwExceptionOnError = true)
+        try
         {
-            try
+            PrepareClient(mediaType, userAgent);
+            return await _httpClient.GetAsync<TResult>(requestUri).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            if (throwExceptionOnError)
             {
-                PrepareClient(mediaType, userAgent);
-                return await _httpClient.GetAsync<TResult>(requestUri).ConfigureAwait(false);
+                ex.Data.Add("URI", requestUri);
+                ex.Data.Add("MediaType", mediaType);
+                ex.Data.Add("UserAgent", userAgent);
+
+                throw ex;
             }
-            catch(Exception ex)
+
+            return default(TResult);
+        }
+    }
+
+    public static async Task<string> GetAsync(
+        string requestUri,
+        string mediaType = null,
+        string userAgent = null,
+        bool throwExceptionOnError = true)
+    {
+        try
+        {
+            PrepareClient(mediaType, userAgent);
+            return await _httpClient.GetStringAsync(requestUri).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            if (throwExceptionOnError)
             {
-                if (throwExceptionOnError)
-                {
-                    ex.Data.Add("URI", requestUri);
-                    ex.Data.Add("MediaType", mediaType);
-                    ex.Data.Add("UserAgent", userAgent);
+                ex.Data.Add("URI", requestUri);
+                ex.Data.Add("MediaType", mediaType);
+                ex.Data.Add("UserAgent", userAgent);
 
-                    throw ex;
-                }
-
-                return default(TResult);
+                throw ex;
             }
+
+            return null;
+        }
+    }
+
+    private static void PrepareClient(
+        string mediaType = null,
+        string userAgent = null)
+    {
+        _httpClient.DefaultRequestHeaders.Accept.Clear();
+
+        if (mediaType != null)
+        {
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
         }
 
-        public static async Task<string> GetAsync(
-            string requestUri,
-            string mediaType = null,
-            string userAgent = null,
-            bool throwExceptionOnError = true)
+        if (userAgent != null)
         {
-            try
-            {
-                PrepareClient(mediaType, userAgent);
-                return await _httpClient.GetStringAsync(requestUri).ConfigureAwait(false);
-            }
-            catch(Exception ex)
-            {
-                if (throwExceptionOnError)
-                {
-                    ex.Data.Add("URI", requestUri);
-                    ex.Data.Add("MediaType", mediaType);
-                    ex.Data.Add("UserAgent", userAgent);
-
-                    throw ex;
-                }
-
-                return null;
-            }
-        }
-
-        private static void PrepareClient(
-            string mediaType = null,
-            string userAgent = null)
-        {
-            _httpClient.DefaultRequestHeaders.Accept.Clear();
-
-            if (mediaType != null)
-            {
-                _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
-            }
-
-            if (userAgent != null)
-            {
-                _httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
-            }
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
         }
     }
 }

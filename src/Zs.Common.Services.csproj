@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Zs.Common" Version="6.0.1" />
+    <PackageReference Include="Zs.Common" Version="6.0.2" />
   </ItemGroup>
 
 </Project>

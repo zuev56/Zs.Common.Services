@@ -1,74 +1,73 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Abstractions;
 
-namespace Zs.Common.Services.Scheduler
+namespace Zs.Common.Services.Scheduler;
+
+public sealed class Scheduler : IScheduler
 {
-    public sealed class Scheduler : IScheduler
+    private readonly ILogger<Scheduler> _logger;
+    private Timer _timer;
+
+    public List<IJobBase> Jobs { get; } = new List<IJobBase>();
+
+    public Scheduler(ILogger<Scheduler> logger = null)
     {
-        private readonly ILogger<Scheduler> _logger;
-        private Timer _timer;
+        _logger = logger;
+    }
 
-        public List<IJobBase> Jobs { get; } = new List<IJobBase>();
-
-        public Scheduler(ILogger<Scheduler> logger = null)
+    public void Start(uint dueTimeMs, uint periodMs)
+    {
+        try
         {
-            _logger = logger;
+            _timer = new Timer(new TimerCallback(DoWork));
+            _timer.Change(dueTimeMs, periodMs);
+
+            _logger?.LogInformation($"{nameof(Scheduler)} started");
         }
-
-        public void Start(uint dueTimeMs, uint periodMs)
+        catch (Exception ex)
         {
-            try
-            {
-                _timer = new Timer(new TimerCallback(DoWork));
-                _timer.Change(dueTimeMs, periodMs);
-
-                _logger?.LogInformation($"{nameof(Scheduler)} started");
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, $"{nameof(Scheduler)} starting error");
-            }
+            _logger?.LogError(ex, $"{nameof(Scheduler)} starting error");
         }
+    }
 
-        public void Stop()
+    public void Stop()
+    {
+        try
         {
-            try
-            {
-                _timer.Dispose();
-                _logger?.LogInformation($"{nameof(Scheduler)} stopped");
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, $"{nameof(Scheduler)} stopping error");
-            }
+            _timer.Dispose();
+            _logger?.LogInformation($"{nameof(Scheduler)} stopped");
         }
-
-        private void DoWork(object state)
+        catch (Exception ex)
         {
-            try
+            _logger?.LogError(ex, $"{nameof(Scheduler)} stopping error");
+        }
+    }
+
+    private void DoWork(object state)
+    {
+        try
+        {
+            foreach (var job in Jobs)
             {
-                foreach (var job in Jobs)
+                if (!job.IsRunning && (job.NextRunUtcDate == null || job.NextRunUtcDate < DateTime.UtcNow))
                 {
-                    if (!job.IsRunning && (job.NextRunUtcDate == null || job.NextRunUtcDate < DateTime.UtcNow))
-                    {
-                        Task.Run(async () => await job.Execute())
-                            .ContinueWith((task) =>
-                            {
-                                foreach (var exeption in task.Exception.InnerExceptions)
-                                    _logger.LogErrorIfNeed(exeption, "Job \"{JobDescription}\" executing error", job.Description);
-                            }, TaskContinuationOptions.OnlyOnFaulted);
-                    }
+                    Task.Run(async () => await job.Execute())
+                        .ContinueWith((task) =>
+                        {
+                            foreach (var exeption in task.Exception.InnerExceptions)
+                                _logger.LogErrorIfNeed(exeption, "Job \"{JobDescription}\" executing error", job.Description);
+                        }, TaskContinuationOptions.OnlyOnFaulted);
                 }
             }
-            catch (Exception ex)
-            {
-                _logger?.LogErrorIfNeed(ex, $"{nameof(Scheduler)} DoWork error");
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogErrorIfNeed(ex, $"{nameof(Scheduler)} DoWork error");
         }
     }
 }
