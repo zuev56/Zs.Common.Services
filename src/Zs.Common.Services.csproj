@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <PackageId>Zs.Common.Services</PackageId>
-    <Version>6.0.2</Version>
+    <Version>6.0.3</Version>
     <Authors>zuev56 (Sergei Zuev)</Authors>
     <Company>zuev56 (Sergei Zuev)</Company>
     <RepositoryUrl>https://github.com/zuev56/Zs.Common.Services</RepositoryUrl>
