@@ -38,7 +38,7 @@ public sealed class ProgramJob : Job
         await _method.Invoke().ConfigureAwait(false);
 
         sw.Stop();
-        _logger?.LogTrace($"Job {{Job}} done. Elapsed: {{Elapsed}}", Description, sw.Elapsed);
+        Logger?.LogTrace("Job {Job} done. Elapsed: {Elapsed}", Description, sw.Elapsed);
 
         return ServiceResult<string>.Success(default);
     }
@@ -73,10 +73,10 @@ public sealed class ProgramJob<TResult> : Job<TResult>
         var sw = new Stopwatch();
         sw.Start();
 
-        TResult result = await _method.Invoke().ConfigureAwait(false);
+        var result = await _method.Invoke().ConfigureAwait(false);
 
         sw.Stop();
-        _logger?.LogTrace($"Job {{Job}} done. Elapsed: {{Elapsed}}", Description, sw.Elapsed);
+        Logger?.LogTrace("Job {Job} done. Elapsed: {Elapsed}", Description, sw.Elapsed);
 
         return ServiceResult<TResult>.Success(result);
     }

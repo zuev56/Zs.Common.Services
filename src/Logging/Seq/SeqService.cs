@@ -9,7 +9,6 @@ using Zs.Common.Services.WebAPI;
 
 namespace Zs.Common.Services.Logging.Seq;
 
-/// <summary>Provides access to Seq's log</summary>
 public sealed class SeqService : ISeqService
 {
     private readonly string _token;
@@ -82,4 +81,3 @@ public sealed class SeqService : ISeqService
     }
 
 }
-

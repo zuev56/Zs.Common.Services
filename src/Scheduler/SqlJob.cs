@@ -7,13 +7,10 @@ using Zs.Common.Models;
 
 namespace Zs.Common.Services.Scheduler;
 
-/// <summary>
-/// <see cref="Job"/> based on SQL script
-/// </summary>
 public sealed class SqlJob : Job<string>
 {
     private readonly string _sqlQuery;
-    private QueryResultType _resultType;
+    private readonly QueryResultType _resultType;
     private readonly IDbClient _dbClient;
 
     // TODO: Try use fluent interface to create instanses
@@ -44,10 +41,9 @@ public sealed class SqlJob : Job<string>
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, $"{nameof(GetExecutionResult)} error");
+            Logger?.LogError(ex, $"{nameof(GetExecutionResult)} error");
             LastResult = ServiceResult<string>.Error($"Sql job '{Description}' execution error");
         }
         return LastResult;
     }
-
 }

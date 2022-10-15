@@ -8,7 +8,7 @@ namespace Zs.Common.Services.WebAPI;
 
 public static class ApiHelper
 {
-    private static readonly HttpClient _httpClient = new HttpClient();
+    private static readonly HttpClient HttpClient = new();
 
     public static async Task<TResult> GetAsync<TResult>(
         string requestUri,
@@ -19,7 +19,7 @@ public static class ApiHelper
         try
         {
             PrepareClient(mediaType, userAgent);
-            return await _httpClient.GetAsync<TResult>(requestUri).ConfigureAwait(false);
+            return await HttpClient.GetAsync<TResult>(requestUri).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -32,7 +32,7 @@ public static class ApiHelper
                 throw ex;
             }
 
-            return default(TResult);
+            return default;
         }
     }
 
@@ -45,7 +45,7 @@ public static class ApiHelper
         try
         {
             PrepareClient(mediaType, userAgent);
-            return await _httpClient.GetStringAsync(requestUri).ConfigureAwait(false);
+            return await HttpClient.GetStringAsync(requestUri).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -66,16 +66,16 @@ public static class ApiHelper
         string mediaType = null,
         string userAgent = null)
     {
-        _httpClient.DefaultRequestHeaders.Accept.Clear();
+        HttpClient.DefaultRequestHeaders.Accept.Clear();
 
         if (mediaType != null)
         {
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
+            HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
         }
 
         if (userAgent != null)
         {
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
+            HttpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
         }
     }
 }

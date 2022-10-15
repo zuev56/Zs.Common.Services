@@ -6,23 +6,20 @@ using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler;
 
-/// <summary>
-/// Base class for Jobs
-/// </summary>
 public abstract class JobBase : IJobBase
 {
-    protected int _idleStepsCount;
-    protected const int STOPPED = 0, RUNNING = 1;
-    protected int _isRunning;
-    protected readonly ILogger _logger;
+    private int _isRunning;
+    private int _idleStepsCount;
+    private const int Stopped = 0, Running = 1;
+    protected readonly ILogger Logger;
 
-    public bool IsRunning => _isRunning == RUNNING;
-    public long Counter { get; protected set; }
-    public int IdleStepsCount
+    public virtual bool IsRunning => _isRunning == Running;
+    public virtual int IdleStepsCount
     {
         get => _idleStepsCount;
         set => Interlocked.Exchange(ref _idleStepsCount, value);
     }
+    public long Counter { get; protected set; }
     public DateTime? NextRunUtcDate { get; protected set; }
     public DateTime? LastRunUtcDate { get; protected set; }
     public TimeSpan Period { get; protected set; }
@@ -35,12 +32,12 @@ public abstract class JobBase : IJobBase
     {
         Period = period;
         NextRunUtcDate = startDate;
-        _logger = logger;
+        Logger = logger;
     }
 
     public Task Execute()
     {
-        if (Interlocked.Exchange(ref _isRunning, RUNNING) == STOPPED)
+        if (Interlocked.Exchange(ref _isRunning, Running) == Stopped)
         {
             try
             {
@@ -64,7 +61,7 @@ public abstract class JobBase : IJobBase
                 LastRunUtcDate = DateTime.UtcNow;
                 NextRunUtcDate = DateTime.UtcNow + Period;
                 Counter++;
-                Interlocked.Exchange(ref _isRunning, STOPPED);
+                Interlocked.Exchange(ref _isRunning, Stopped);
             }
         }
 
@@ -73,4 +70,3 @@ public abstract class JobBase : IJobBase
 
     protected abstract Task AfterExecution();
 }
-

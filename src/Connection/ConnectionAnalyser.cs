@@ -9,29 +9,18 @@ using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Connection;
 
-// TODO: Make async Tasks
-
-/// <summary> <inheritdoc/> </summary>
 public sealed class ConnectionAnalyser : IConnectionAnalyser
 {
-    private readonly object _locker = new object();
+    private readonly object _locker = new();
     private readonly ILogger<ConnectionAnalyser> _logger;
     private readonly string[] _internetServers;
     private Timer _timer;
 
-    /// <summary> <inheritdoc/> </summary>
     public WebProxy WebProxy { get; private set; }
-
-    /// <summary> <inheritdoc/> </summary>
     public DateTime? InternetRepairDate { get; private set; }
-
-    /// <summary> <inheritdoc/> </summary>
     public ConnectionStatus CurrentStatus { get; private set; } = ConnectionStatus.Undefined;
 
-    /// <summary> <inheritdoc/> </summary>
-
     public event Action<ConnectionStatus> ConnectionStatusChanged;
-
 
     public ConnectionAnalyser(params string[] testHosts)
     {
@@ -44,45 +33,42 @@ public sealed class ConnectionAnalyser : IConnectionAnalyser
         _logger = logger;
     }
 
-    /// <summary> <inheritdoc/> </summary>
     public void Start(uint dueTime, uint period)
     {
         try
         {
-            _timer = new Timer(new TimerCallback(AnalyzeConnection));
+            _timer = new Timer(AnalyzeConnection);
             _timer.Change(dueTime, period);
 
-            _logger?.LogInformation($"{nameof(ConnectionAnalyser)} started");
+            _logger?.LogInformation("{Service} started", nameof(ConnectionAnalyser));
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, $"{nameof(ConnectionAnalyser)} starting error");
+            _logger?.LogError(ex, "{Service} starting error", nameof(ConnectionAnalyser));
         }
     }
 
-    /// <summary> <inheritdoc/> </summary>
     public void Stop()
     {
         try
         {
             _timer.Dispose();
-            _logger?.LogInformation($"{nameof(ConnectionAnalyser)} stopped");
+            _logger?.LogInformation("{Service} stopped", nameof(ConnectionAnalyser));
         }
         catch (Exception ex)
         {
-            _logger?.LogInformation(ex, $"{nameof(ConnectionAnalyser)} stopping error");
+            _logger?.LogInformation(ex, "{Service} stopping error", nameof(ConnectionAnalyser));
         }
     }
 
     /// <summary> <inheritdoc/> </summary>
-    public void InitializeProxy(string socket, string userName = null, string password = null)
+    public void InitializeProxy(string socket, string? userName = null, string? password = null)
     {
         WebProxy = new WebProxy(socket, true);
-        if (!string.IsNullOrWhiteSpace(userName)
-            && !string.IsNullOrWhiteSpace(password))
+        if (userName != null && password != null)
         {
             WebProxy.Credentials = new NetworkCredential(userName, password);
-            _logger?.LogInformation("Proxy used", nameof(ConnectionAnalyser));
+            _logger?.LogInformation("Proxy used");
         }
     }
 
@@ -94,7 +80,7 @@ public sealed class ConnectionAnalyser : IConnectionAnalyser
 
             using (var ping = new Ping())
             {
-                return ping.Send(hostAddress).Status == IPStatus.Success;
+                return ping.Send(hostAddress)?.Status == IPStatus.Success;
             }
         }
         catch
@@ -112,7 +98,7 @@ public sealed class ConnectionAnalyser : IConnectionAnalyser
         if (splitValues.Length != 4)
             return false;
 
-        return splitValues.All(r => byte.TryParse(r, out byte tempForParsing));
+        return splitValues.All(r => byte.TryParse(r, out _));
     }
 
     private void AnalyzeConnection(object timerState)
@@ -137,19 +123,23 @@ public sealed class ConnectionAnalyser : IConnectionAnalyser
                             analyzeResult = ConnectionStatus.Ok;
                             break;
                         }
-                        else
-                            analyzeResult = ConnectionStatus.NoInternetConnection;
+
+                        analyzeResult = ConnectionStatus.NoInternetConnection;
                     }
 
                 if (InternetRepairDate == null && analyzeResult == ConnectionStatus.Ok)
+                {
                     InternetRepairDate = DateTime.UtcNow;
+                }
                 else if (analyzeResult != ConnectionStatus.Ok)
+                {
                     InternetRepairDate = null;
+                }
 
                 if (analyzeResult != CurrentStatus)
                 {
                     CurrentStatus = analyzeResult;
-                    _logger?.LogInformation($"Connection status changed: {CurrentStatus}");
+                    _logger?.LogInformation("Connection status changed: {CurrentStatus}", CurrentStatus);
 
                     ConnectionStatusChanged?.Invoke(CurrentStatus);
                 }

@@ -30,7 +30,7 @@ public sealed class ShellLauncher : IShellLauncher
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             return ServiceResult<string>.Error("Command execution available only on Linux");
 
-        string escapedArgs = command.Replace("\"", "\\\"");
+        var escapedArgs = command.Replace("\"", "\\\"");
 
         return await RunShellCommand(command, $"-c \"{escapedArgs}\"", _bashPath, cancellationToken).ConfigureAwait(false);
     }
@@ -43,7 +43,7 @@ public sealed class ShellLauncher : IShellLauncher
         if (string.IsNullOrWhiteSpace(command))
             return ServiceResult<string>.Error("PowerShell command can not be empty");
 
-        string escapedArgs = command.Replace("\"", "\\\"");
+        var escapedArgs = command.Replace("\"", "\\\"");
 
         return await RunShellCommand(command, $"& {escapedArgs}", _powerShellPath, cancellationToken).ConfigureAwait(false);
     }
@@ -64,8 +64,8 @@ public sealed class ShellLauncher : IShellLauncher
         };
 
         process.Start();
-        string output = await process.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-        string error = await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
+        var output = await process.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+        var error = await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
 
         await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 

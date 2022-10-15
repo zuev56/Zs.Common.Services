@@ -30,7 +30,7 @@ public interface IConnectionAnalyser
     /// <param name="socket">IP address and port. Example: 123.45.67.89:6543</param>
     /// <param name="userName">The user name associated with the credentials</param>
     /// <param name="password">The password for the user name associated with the credentials</param>
-    void InitializeProxy(string socket, string userName = null, string password = null);
+    void InitializeProxy(string socket, string? userName = null, string? password = null);
 
     /// <summary>
     /// Starts the <see cref="IConnectionAnalyser"/>
