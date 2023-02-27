@@ -1,68 +1,58 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Zs.Common.Extensions;
-using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Scheduler;
 
 public sealed class Scheduler : IScheduler
 {
-    private readonly ILogger<Scheduler> _logger;
-    private Timer _timer;
+    private readonly ILogger<Scheduler>? _logger;
+    private Timer _timer = null!;
 
-    public List<IJobBase> Jobs { get; } = new();
+    public List<JobBase> Jobs { get; } = new();
 
-    public Scheduler(ILogger<Scheduler> logger = null)
+    public Scheduler(ILogger<Scheduler>? logger = null)
     {
         _logger = logger;
     }
 
-    public void Start(uint dueTimeMs, uint periodMs)
+    public void Start(TimeSpan dueTime, TimeSpan period)
     {
-        try
-        {
-            _timer = new Timer(DoWork);
-            _timer.Change(dueTimeMs, periodMs);
+        _timer = new Timer(DoWork);
+        _timer.Change(dueTime, period);
 
-            _logger?.LogInformation($"{nameof(Scheduler)} started");
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, $"{nameof(Scheduler)} starting error");
-        }
+        _logger?.LogInformation($"{nameof(Scheduler)} started");
     }
 
     public void Stop()
     {
-        try
-        {
-            _timer.Dispose();
-            _logger?.LogInformation($"{nameof(Scheduler)} stopped");
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, $"{nameof(Scheduler)} stopping error");
-        }
+        _timer.Dispose();
+
+        _logger?.LogInformation($"{nameof(Scheduler)} stopped");
     }
 
-    private void DoWork(object state)
+    private void DoWork(object? state)
     {
         try
         {
-            foreach (var job in Jobs)
+            var readyToRunJobs = Jobs
+                .Where(static job => !job.IsRunning && (job.NextRunUtcDate == null || job.NextRunUtcDate < DateTime.UtcNow));
+
+            foreach (var job in readyToRunJobs)
             {
-                if (!job.IsRunning && (job.NextRunUtcDate == null || job.NextRunUtcDate < DateTime.UtcNow))
-                {
-                    Task.Run(async () => await job.Execute())
-                        .ContinueWith(task =>
+                // TODO: maybe run parallel?
+                Task.Run(async () => await job.ExecuteAsync().ConfigureAwait(false))
+                    .ContinueWith(task =>
+                    {
+                        foreach (var exception in task.Exception!.InnerExceptions)
                         {
-                            foreach (var exeption in task.Exception.InnerExceptions)
-                                _logger.LogErrorIfNeed(exeption, "Job \"{JobDescription}\" executing error", job.Description);
-                        }, TaskContinuationOptions.OnlyOnFaulted);
-                }
+                            _logger?.LogErrorIfNeed(exception, "Job \"{JobDescription}\" executing error", job.Description);
+                        }
+                    }, TaskContinuationOptions.OnlyOnFaulted);
             }
         }
         catch (Exception ex)

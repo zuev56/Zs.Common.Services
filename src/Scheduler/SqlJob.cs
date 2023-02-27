@@ -7,7 +7,7 @@ using Zs.Common.Models;
 
 namespace Zs.Common.Services.Scheduler;
 
-public sealed class SqlJob : Job<string>
+public sealed class SqlJob : Job<string?>
 {
     private readonly string _sqlQuery;
     private readonly QueryResultType _resultType;
@@ -20,29 +20,29 @@ public sealed class SqlJob : Job<string>
         IDbClient dbClient,
         TimeSpan period,
         DateTime? startUtcDate = null,
-        string description = null,
-        ILogger logger = null)
+        string? description = null,
+        ILogger? logger = null)
         : base(period, startUtcDate, logger)
     {
-        Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
-
+        Period = period;
         _resultType = resultType;
-        _sqlQuery = sqlQuery ?? throw new ArgumentNullException(nameof(sqlQuery));
-        _dbClient = dbClient ?? throw new ArgumentNullException(nameof(dbClient));
+        _sqlQuery = sqlQuery;
+        _dbClient = dbClient;
         Description = description;
     }
 
-    protected override async Task<IOperationResult<string>> GetExecutionResult()
+    protected override async Task<Result<string?>> GetExecutionResult()
     {
         try
         {
             var queryResult = await _dbClient.GetQueryResultAsync(_sqlQuery, _resultType).ConfigureAwait(false);
-            LastResult = ServiceResult<string>.Success(queryResult);
+            LastResult = Result.Success(queryResult);
         }
         catch (Exception ex)
         {
             Logger?.LogError(ex, $"{nameof(GetExecutionResult)} error");
-            LastResult = ServiceResult<string>.Error($"Sql job '{Description}' execution error");
+            var fault = new Fault("SqlJobExecutionError", $"Sql job '{Description}' execution error", Array.Empty<Fault>());
+            LastResult = Result.Fail<string?>(fault);
         }
         return LastResult;
     }

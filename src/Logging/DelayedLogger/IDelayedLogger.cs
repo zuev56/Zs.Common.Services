@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Extensions.Logging;
 
-namespace Zs.Common.Services.Abstractions;
+namespace Zs.Common.Services.Logging.DelayedLogger;
 
 public interface IDelayedLogger<TSourceContext>
 {

@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Zs.Common.Abstractions;
 using Zs.Common.Models;
 
 namespace Zs.Common.Services.Scheduler;
@@ -13,24 +12,24 @@ namespace Zs.Common.Services.Scheduler;
 public sealed class ProgramJob : Job
 {
     private readonly Func<Task> _method;
-    private readonly object _parameter;
+    private readonly object? _parameter;
 
     public ProgramJob(
         TimeSpan period,
         Func<Task> method,
-        object parameter = null,
+        object? parameter = null,
         DateTime? startUtcDate = null,
-        string description = null,
-        ILogger logger = null)
+        string? description = null,
+        ILogger? logger = null)
         : base(period, startUtcDate, logger)
     {
-        Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
-        _method = method ?? throw new ArgumentNullException(nameof(method));
+        Period = period;
+        _method = method;
         _parameter = parameter;
         Description = description;
     }
 
-    protected override async Task<IOperationResult<string>> GetExecutionResult()
+    protected override async Task<Result<string?>> GetExecutionResult()
     {
         var sw = new Stopwatch();
         sw.Start();
@@ -40,7 +39,7 @@ public sealed class ProgramJob : Job
         sw.Stop();
         Logger?.LogTrace("Job {Job} done. Elapsed: {Elapsed}", Description, sw.Elapsed);
 
-        return ServiceResult<string>.Success(default);
+        return Result.Success<string?>(null);
     }
 }
 
@@ -50,25 +49,25 @@ public sealed class ProgramJob : Job
 public sealed class ProgramJob<TResult> : Job<TResult>
 {
     private readonly Func<Task<TResult>> _method;
-    private readonly object _parameter;
+    private readonly object? _parameter;
 
     // TODO: Use BUILDER to create instanses
     public ProgramJob(
         Func<Task<TResult>> method,
         TimeSpan period,
         DateTime? startUtcDate = null,
-        object parameter = null,
-        string description = null,
-        ILogger logger = null)
+        object? parameter = null,
+        string? description = null,
+        ILogger? logger = null)
         : base(period, startUtcDate, logger)
     {
-        Period = period != default ? period : throw new ArgumentException($"{nameof(period)} can't have default value");
-        _method = method ?? throw new ArgumentNullException(nameof(method));
+        Period = period;
+        _method = method;
         _parameter = parameter;
         Description = description;
     }
 
-    protected override async Task<IOperationResult<TResult>> GetExecutionResult()
+    protected override async Task<Result<TResult>> GetExecutionResult()
     {
         var sw = new Stopwatch();
         sw.Start();
@@ -78,6 +77,6 @@ public sealed class ProgramJob<TResult> : Job<TResult>
         sw.Stop();
         Logger?.LogTrace("Job {Job} done. Elapsed: {Elapsed}", Description, sw.Elapsed);
 
-        return ServiceResult<TResult>.Success(result);
+        return Result<TResult>.Success(result);
     }
 }

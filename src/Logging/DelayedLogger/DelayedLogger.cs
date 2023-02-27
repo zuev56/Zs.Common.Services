@@ -5,14 +5,11 @@ using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using Zs.Common.Extensions;
-using Zs.Common.Services.Abstractions;
 
 namespace Zs.Common.Services.Logging.DelayedLogger;
 
 public sealed class DelayedLogger<TSourceContext> : IDelayedLogger<TSourceContext>, IDisposable
 {
-    public TimeSpan DefaultLogWriteInterval { get; set; } = TimeSpan.FromMinutes(1);
-
     private sealed record Message(
         string Text,
         LogLevel LogLevel,
@@ -24,6 +21,8 @@ public sealed class DelayedLogger<TSourceContext> : IDelayedLogger<TSourceContex
     private ImmutableList<Message> _messages = ImmutableList.Create<Message>();
     private readonly Timer _timer;
     private readonly ILoggerFactory _loggerFactory;
+
+    public TimeSpan DefaultLogWriteInterval { get; set; } = TimeSpan.FromMinutes(1);
 
     public DelayedLogger(ILoggerFactory loggerFactory, int analyzeIntervalMs = 5)
     {
@@ -67,18 +66,19 @@ public sealed class DelayedLogger<TSourceContext> : IDelayedLogger<TSourceContex
     public void SetupLogMessage(string messageText, TimeSpan logShowInterval)
     {
         _messageTemplatesWithInterval.AddOrUpdate(
-            messageText, logShowInterval, (key, value) => value);
+            messageText, logShowInterval, (_, value) => value);
     }
 
     public int Log(string messageText, LogLevel logLevel)
-
     {
         ArgumentNullException.ThrowIfNull(messageText);
 
         if (!_messageTemplatesWithInterval.ContainsKey(messageText))
+        {
             SetupLogMessage(messageText, DefaultLogWriteInterval);
+        }
 
-        _messages = _messages.Add(new(messageText, logLevel, DateTime.UtcNow, typeof(TSourceContext)));
+        _messages = _messages.Add(new Message(messageText, logLevel, DateTime.UtcNow, typeof(TSourceContext)));
 
         return _messages.Count(m => m.Text == messageText);
     }

@@ -4,16 +4,16 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Zs.Common.Extensions;
 
-namespace Zs.Common.Services.WebAPI;
+namespace Zs.Common.Services.Http;
 
-public static class ApiHelper
+public static class Request
 {
     private static readonly HttpClient HttpClient = new();
 
-    public static async Task<TResult> GetAsync<TResult>(
+    public static async Task<TResult?> GetAsync<TResult>(
         string requestUri,
-        string mediaType = null,
-        string userAgent = null,
+        string? mediaType = null,
+        string? userAgent = null,
         bool throwExceptionOnError = true)
     {
         try
@@ -36,10 +36,10 @@ public static class ApiHelper
         }
     }
 
-    public static async Task<string> GetAsync(
+    public static async Task<string?> GetAsync(
         string requestUri,
-        string mediaType = null,
-        string userAgent = null,
+        string? mediaType = null,
+        string? userAgent = null,
         bool throwExceptionOnError = true)
     {
         try
@@ -63,8 +63,8 @@ public static class ApiHelper
     }
 
     private static void PrepareClient(
-        string mediaType = null,
-        string userAgent = null)
+        string? mediaType = null,
+        string? userAgent = null)
     {
         HttpClient.DefaultRequestHeaders.Accept.Clear();
 
