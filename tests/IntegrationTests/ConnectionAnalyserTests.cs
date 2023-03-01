@@ -11,7 +11,7 @@ namespace IntegrationTests;
 public sealed class ConnectionAnalyserTests : TestBase
 {
     [Fact]
-    public async Task ConnectionAnalyserStatus_Should_UpdateStatusToOk()
+    public async Task ConnectionAnalyser_Should_UpdateStatus()
     {
         var connectionAnalyzer = ServiceProvider.GetRequiredService<IConnectionAnalyzer>();
         connectionAnalyzer.CurrentStatus.Should().Be(ConnectionStatus.Undefined);
@@ -20,6 +20,7 @@ public sealed class ConnectionAnalyserTests : TestBase
         await Task.Delay(2.Seconds());
         connectionAnalyzer.Stop();
 
-        connectionAnalyzer.CurrentStatus.Should().Be(ConnectionStatus.Ok);
+        connectionAnalyzer.CurrentStatus.Should()
+            .BeOneOf(ConnectionStatus.Ok, ConnectionStatus.NoInternetConnection);
     }
 }

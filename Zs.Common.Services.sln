@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zs.Common.Services", "src\Z
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "tests\UnitTests\UnitTests.csproj", "{ACB52B34-2143-4C05-8E8F-747AAA21DD3C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{B0F458DC-102D-4BAC-AC96-A0488AA52741}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "tests\IntegrationTests\IntegrationTests.csproj", "{B0F458DC-102D-4BAC-AC96-A0488AA52741}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
