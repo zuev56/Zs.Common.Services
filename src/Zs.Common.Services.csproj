@@ -6,7 +6,7 @@
     <PackageId>Zs.Common.Services</PackageId>
     <PublishTrimmed>true</PublishTrimmed>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
-    <Version>7.0.0-preview-2</Version>
+    <Version>7.0.0</Version>
     <Authors>zuev56 (Sergei Zuev)</Authors>
     <Company>zuev56 (Sergei Zuev)</Company>
     <RepositoryUrl>https://github.com/zuev56/Zs.Common.Services</RepositoryUrl>
