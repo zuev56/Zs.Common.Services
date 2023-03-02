@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Zs.Common.Services.Scheduler;
+namespace Zs.Common.Services.Scheduling;
 
 public interface IScheduler
 {

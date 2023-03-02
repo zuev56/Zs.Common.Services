@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace Zs.Common.Services.Scheduler;
+namespace Zs.Common.Services.Scheduling;
 
 public abstract class JobBase
 {
@@ -61,8 +61,9 @@ public abstract class JobBase
         }
         finally
         {
-            LastRunUtcDate = DateTime.UtcNow;
-            NextRunUtcDate = DateTime.UtcNow + Period;
+            var utcNow = DateTime.UtcNow;
+            LastRunUtcDate = utcNow;
+            NextRunUtcDate = utcNow + Period;
             Counter++;
             Interlocked.Exchange(ref _isRunning, Stopped);
         }

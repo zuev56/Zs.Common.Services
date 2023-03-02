@@ -3,9 +3,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Zs.Common.Abstractions;
 using Zs.Common.Enums;
+using Zs.Common.Extensions;
 using Zs.Common.Models;
 
-namespace Zs.Common.Services.Scheduler;
+namespace Zs.Common.Services.Scheduling;
 
 public sealed class SqlJob : Job<string?>
 {
@@ -40,7 +41,7 @@ public sealed class SqlJob : Job<string?>
         }
         catch (Exception ex)
         {
-            Logger?.LogError(ex, $"{nameof(GetExecutionResult)} error");
+            Logger?.LogErrorIfNeed(ex, $"{nameof(GetExecutionResult)} error");
             var fault = new Fault("SqlJobExecutionError", $"Sql job '{Description}' execution error", Array.Empty<Fault>());
             LastResult = Result.Fail<string?>(fault);
         }

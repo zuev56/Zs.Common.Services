@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Zs.Common.Extensions;
 
-namespace Zs.Common.Services.Scheduler;
+namespace Zs.Common.Services.Scheduling;
 
 public sealed class Scheduler : IScheduler
 {
