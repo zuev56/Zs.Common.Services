@@ -1,5 +1,6 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,45 +9,62 @@ using Zs.Common.Models;
 
 namespace Zs.Common.Services.Shell;
 
-public sealed class ShellLauncher : IShellLauncher
+public static class ShellLauncher
 {
-    private readonly string? _bashPath;
-    private readonly string? _powerShellPath;
-
-    public ShellLauncher(string? bashPath = null, string? powerShellPath = null)
+    public static async Task<Result<string>> RunAsync(string shellPath, string command, CancellationToken cancellationToken = default)
     {
-        _bashPath = bashPath;
-        _powerShellPath = powerShellPath;
-    }
+        cancellationToken.ThrowIfCancellationRequested();
 
-    public async Task<Result<string>> RunBashAsync(string command, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(_bashPath))
+        if (!File.Exists(shellPath))
         {
-            var fault = new Fault("BashIsNotAvailable");
+            var fault = Faults.ShellNotFound(shellPath);
             return Result.Fail<string>(fault);
         }
 
         if (string.IsNullOrWhiteSpace(command))
         {
-            var fault = new Fault("BashIsNotAvailable");
+            var fault = new Fault(FaultCodes.CommandMustNotBeEmpty);
             return Result.Fail<string>(fault);
         }
 
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            var fault = new Fault("CommandExecutionAvailableOnlyOnLinux");
-            return Result.Fail<string>(fault);
-        }
+        var arguments = $"-c \"{command.Replace("\"", "\\\"")}\"";
 
-        var escapedArgs = command.Replace("\"", "\\\"");
-
-        return await RunShellCommand(command, $"-c \"{escapedArgs}\"", _bashPath, cancellationToken).ConfigureAwait(false);
+        return await RunShellCommandAsync(shellPath, arguments, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result<string>> RunShellCommand(string command, string arguments, string shellPath, CancellationToken cancellationToken)
+    private static async Task<Result<string>> RunShellCommandAsync(string shellPath, string arguments, CancellationToken cancellationToken)
     {
-        var process = new Process
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var process = CreateProcess(shellPath, arguments);
+
+        try
+        {
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+            var error = await process.StandardError.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+
+            error = ExtendErrorWithFullInfo(error, shellPath, arguments);
+
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                var fault = Fault.Unknown.WithMessage(error);
+                return Result.Fail<string>(fault);
+            }
+            return Result.Success(output);
+        }
+        catch (Exception ex)
+        {
+            var message = $"{ex.GetType()}{Environment.NewLine}{shellPath} {arguments}";
+            return Fault.Unknown.WithMessage(message);
+        }
+    }
+
+    private static Process CreateProcess(string shellPath, string arguments)
+    {
+        return new Process
         {
             StartInfo = new ProcessStartInfo
             {
@@ -58,44 +76,9 @@ public sealed class ShellLauncher : IShellLauncher
                 CreateNoWindow = true
             }
         };
-
-        process.Start();
-        var output = await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-        var error = await process.StandardError.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-
-        error = ExtendErrorWithFullInfo(error, command, arguments, shellPath);
-
-        if (string.IsNullOrWhiteSpace(error))
-        {
-            var fault = Fault.Unknown.SetMessage(error);
-            return Result.Fail<string>(fault);
-        }
-
-        return Result.Success(output);
     }
 
-    public async Task<Result<string>> RunPowerShellAsync(string command, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(_powerShellPath))
-        {
-            var fault = new Fault("PowerShellIsNotAvailable");
-            return Result.Fail<string>(fault);
-        }
-
-        if (string.IsNullOrWhiteSpace(command))
-        {
-            var fault = new Fault("PowerShellCommandIsEmpty");
-            return Result.Fail<string>(fault);
-        }
-
-        var escapedArgs = command.Replace("\"", "\\\"");
-
-        return await RunShellCommand(command, $"& {escapedArgs}", _powerShellPath, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static string ExtendErrorWithFullInfo(string error, string command, string arguments, string shellPath)
+    private static string ExtendErrorWithFullInfo(string error, string shellPath, string arguments)
     {
         if (string.IsNullOrWhiteSpace(error))
         {
@@ -104,7 +87,6 @@ public sealed class ShellLauncher : IShellLauncher
 
         var sb = new StringBuilder(error).AppendLine()
             .Append(" - ShellPath: \"").Append(shellPath).Append("\"").AppendLine()
-            .Append(" - Command: \"").Append(command).Append("\"").AppendLine()
             .Append(" - Arguments: \"").Append(arguments).AppendLine();
 
         return sb.ToString();
