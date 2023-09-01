@@ -4,7 +4,6 @@ using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Zs.Common.Enums;
 
 namespace Zs.Common.Services.Connection;
 

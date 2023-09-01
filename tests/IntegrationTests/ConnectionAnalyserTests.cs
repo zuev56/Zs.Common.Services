@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
-using Zs.Common.Enums;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Connection;
 

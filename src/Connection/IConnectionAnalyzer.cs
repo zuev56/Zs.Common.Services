@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using Zs.Common.Enums;
 
 namespace Zs.Common.Services.Connection;
 

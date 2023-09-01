@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Zs.Common.Abstractions;
-using Zs.Common.Enums;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
 
@@ -11,13 +10,11 @@ namespace Zs.Common.Services.Scheduling;
 public sealed class SqlJob : Job<string?>
 {
     private readonly string _sqlQuery;
-    private readonly QueryResultType _resultType;
     private readonly IDbClient _dbClient;
 
     // TODO: Try use fluent interface to create instanses
     public SqlJob(
         string sqlQuery,
-        QueryResultType resultType,
         IDbClient dbClient,
         TimeSpan period,
         DateTime? startUtcDate = null,
@@ -26,7 +23,6 @@ public sealed class SqlJob : Job<string?>
         : base(period, startUtcDate, logger)
     {
         Period = period;
-        _resultType = resultType;
         _sqlQuery = sqlQuery;
         _dbClient = dbClient;
         Description = description;
@@ -36,7 +32,7 @@ public sealed class SqlJob : Job<string?>
     {
         try
         {
-            var queryResult = await _dbClient.GetQueryResultAsync(_sqlQuery, _resultType).ConfigureAwait(false);
+            var queryResult = await _dbClient.GetQueryResultAsync(_sqlQuery).ConfigureAwait(false);
             LastResult = Result.Success(queryResult);
         }
         catch (Exception ex)
