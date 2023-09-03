@@ -3,10 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <Version>7.1.1</Version>
     <PackageId>Zs.Common.Services</PackageId>
-    <PublishTrimmed>true</PublishTrimmed>
-    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
-    <Version>7.1.0</Version>
     <Authors>zuev56 (Sergei Zuev)</Authors>
     <Company>zuev56 (Sergei Zuev)</Company>
     <RepositoryUrl>https://github.com/zuev56/Zs.Common.Services</RepositoryUrl>
@@ -17,7 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
-    <PackageReference Include="Zs.Common" Version="7.1.0" />
+    <PackageReference Include="Zs.Common" Version="7.1.1" />
   </ItemGroup>
 
   <ItemGroup>
