@@ -10,7 +10,6 @@ namespace IntegrationTests;
 [ExcludeFromCodeCoverage]
 public abstract class TestBase
 {
-    private const string AppsettingsFileName = "appsettings.json";
     protected readonly ServiceProvider ServiceProvider;
 
     protected TestBase()
@@ -31,9 +30,11 @@ public abstract class TestBase
 
     private static IConfiguration GetAppsettings()
     {
-        var appsettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AppsettingsFileName);
+        var appsettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+        var appsettingsDevPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.Development.json");
         var configuration = new ConfigurationManager();
         configuration.AddJsonFile(appsettingsPath, optional: false);
+        configuration.AddJsonFile(appsettingsDevPath, optional: true);
 
         return configuration;
     }

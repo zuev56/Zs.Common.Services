@@ -1,81 +1,78 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Zs.Common.Extensions;
 
 namespace Zs.Common.Services.Http;
 
-public static class Request
+public sealed class Request
 {
-    private static readonly HttpClient HttpClient = new();
+    private readonly string _uri;
+    private readonly IHttpClientFactory? _httpClientFactory;
+    private Dictionary<string, string?>? _headers;
+    private ILogger? _logger;
 
-    public static async Task<TResult?> GetAsync<TResult>(
-        string requestUri,
-        string? mediaType = null,
-        string? userAgent = null,
-        bool throwExceptionOnError = true)
+    private Request(string uri, IHttpClientFactory? httpClientFactory)
     {
+        _uri = uri;
+        _httpClientFactory = httpClientFactory;
+    }
+
+    public static Request Create(string uri, IHttpClientFactory? httpClientFactory = null)
+    {
+        return new Request(uri, httpClientFactory);
+    }
+
+    public Request WithHeaders(Dictionary<string, string?> headers)
+    {
+        _headers = headers;
+        return this;
+    }
+
+    public Request WithLogger(ILogger logger)
+    {
+        _logger = logger;
+        return this;
+    }
+
+    public async Task<TResult?> GetAsync<TResult>(CancellationToken cancellationToken = default)
+    {
+        var stopWatch = Stopwatch.StartNew();
+        using var httpClient = _httpClientFactory != null ? _httpClientFactory.CreateClient() : new HttpClient();
+        SetHeaders(httpClient);
+
+        TResult? result;
         try
         {
-            PrepareClient(mediaType, userAgent);
-            return await HttpClient.GetAsync<TResult>(requestUri).ConfigureAwait(false);
+            var stream = await httpClient.GetStreamAsync(_uri, cancellationToken).ConfigureAwait(false);
+            result = await JsonSerializer.DeserializeAsync<TResult>(stream, cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
-            if (throwExceptionOnError)
-            {
-                ex.Data.Add("URI", requestUri);
-                ex.Data.Add("MediaType", mediaType);
-                ex.Data.Add("UserAgent", userAgent);
-
-                throw ex;
-            }
-
-            return default;
+            _logger?.LogErrorIfNeed(ex, "GET {uri} {time} ms", _uri, stopWatch.ElapsedMilliseconds);
+            throw;
         }
+
+        _logger?.LogTraceIfNeed("GET {uri} {time} ms", _uri, stopWatch.ElapsedMilliseconds);
+        return result;
     }
 
-    public static async Task<string?> GetAsync(
-        string requestUri,
-        string? mediaType = null,
-        string? userAgent = null,
-        bool throwExceptionOnError = true)
+    private void SetHeaders(HttpClient httpClient)
     {
-        try
+        if (_headers == null || !_headers.Any())
+            return;
+
+        httpClient.DefaultRequestHeaders.Clear();
+        foreach (var header in _headers)
         {
-            PrepareClient(mediaType, userAgent);
-            return await HttpClient.GetStringAsync(requestUri).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            if (throwExceptionOnError)
-            {
-                ex.Data.Add("URI", requestUri);
-                ex.Data.Add("MediaType", mediaType);
-                ex.Data.Add("UserAgent", userAgent);
-
-                throw ex;
-            }
-
-            return null;
-        }
-    }
-
-    private static void PrepareClient(
-        string? mediaType = null,
-        string? userAgent = null)
-    {
-        HttpClient.DefaultRequestHeaders.Accept.Clear();
-
-        if (mediaType != null)
-        {
-            HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
-        }
-
-        if (userAgent != null)
-        {
-            HttpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
+            var (name, value) = header;
+            httpClient.DefaultRequestHeaders.Add(name, value);
         }
     }
 }
